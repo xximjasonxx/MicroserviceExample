@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: user-api
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-hostnames
+  namespace: user-api
+data:
+  names-api-hostname: http://names-api-svc.names-api
+  movies-api-hostname: http://movies-api-svc.movies-api
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+  namespace: user-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: user-api-pod
+  template:
+    metadata:
+      labels:
+        name: user-api-pod
+    spec:
+      containers:
+        - name: user-api
+          image: clusterkuberegistry.azurecr.io/user-api:v3.3
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: NAMES_API_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: server-hostnames
+                  key: names-api-hostname
+            - name: MOVIES_API_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: server-hostnames
+                  key: movies-api-hostname
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-api-svc
+  namespace: user-api
+spec:
+  selector:
+    name: user-api-pod
+  ports:
+    - protocol: TCP
+      port: 80
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: user-api-ing
+  namespace: user-api
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /user
+            backend:
+              serviceName: user-api-svc
+              servicePort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-api-svc2
+  namespace: user-api
+spec:
+  selector:
+    name: user-api-pod
+  ports:
+    - protocol: TCP
+      port: 80
+  type: LoadBalancer

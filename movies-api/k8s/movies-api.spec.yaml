@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: movies-api
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: movies-api
+  namespace: movies-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: movies-api-pod
+  template:
+    metadata:
+      labels:
+        name: movies-api-pod
+    spec:
+      containers:
+        - name: movies-api
+          image: clusterkuberegistry.azurecr.io/movies-api:v3
+          ports:
+            - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: movies-api-svc
+  namespace: movies-api
+spec:
+  selector:
+    name: movies-api-pod
+  ports:
+    - protocol: TCP
+      port: 80
+
+---
+
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: movies-api-ing
+  namespace: movies-api
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /movie$
+            backend:
+              serviceName: movies-api-svc
+              servicePort: 80
