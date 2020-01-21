@@ -78,18 +78,3 @@ spec:
             backend:
               serviceName: user-api-svc
               servicePort: 80
-
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: user-api-svc2
-  namespace: user-api
-spec:
-  selector:
-    name: user-api-pod
-  ports:
-    - protocol: TCP
-      port: 80
-  type: LoadBalancer
